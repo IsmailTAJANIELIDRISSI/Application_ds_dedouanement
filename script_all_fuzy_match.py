@@ -2509,24 +2509,83 @@ if __name__ == "__main__":
         sys.exit(1)
     
     # Auto-update from repository
+    print("\n" + "="*70)
+    print("🔄 VÉRIFICATION DES MISES À JOUR (GIT PULL)")
+    print("="*70)
     try:
-        print("🔄 Vérification des mises à jour...")
-        _update_result = subprocess.run(
-            ["git", "pull", "origin", "main"],
+        _script_dir = os.path.dirname(os.path.abspath(__file__))
+        print(f"� Répertoire du script: {_script_dir}")
+        
+        # Check if git is available
+        _git_check = subprocess.run(
+            ["git", "--version"],
             capture_output=True,
             text=True,
-            timeout=10,
-            cwd=os.path.dirname(os.path.abspath(__file__))
+            timeout=5
         )
-        if _update_result.returncode == 0:
-            if "Already up to date" in _update_result.stdout or "Already up-to-date" in _update_result.stdout:
-                print("✓ Version à jour")
-            else:
-                print("✓ Mises à jour appliquées")
-                print("ℹ️  Redémarrage recommandé pour appliquer les changements")
+        print(f"✓ Git installé: {_git_check.stdout.strip()}")
+        
+        # Check if we're in a git repository
+        _git_status_check = subprocess.run(
+            ["git", "rev-parse", "--git-dir"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            cwd=_script_dir
+        )
+        
+        if _git_status_check.returncode != 0:
+            print("⚠️  Pas un dépôt Git - Auto-update désactivé")
+            print("   IMPORTANT: Les PCs doivent cloner le dépôt, pas copier les fichiers!")
+            print("   Commande: git clone <repository_url>")
         else:
-            print("⚠️  Impossible de vérifier les mises à jour (continuant...)")
-    except:
-        pass  # Silently continue if git not available
+            print("✓ Dépôt Git détecté")
+            
+            # Try to pull updates
+            print("\n🌐 Exécution: git pull origin main...")
+            _update_result = subprocess.run(
+                ["git", "pull", "origin", "main"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+                cwd=_script_dir
+            )
+            
+            print(f"\n📋 Résultat de la commande:")
+            print(f"   Code retour: {_update_result.returncode}")
+            
+            if _update_result.stdout:
+                print(f"   Sortie standard:")
+                for line in _update_result.stdout.split('\n'):
+                    if line.strip():
+                        print(f"      {line}")
+            
+            if _update_result.stderr:
+                print(f"   Sortie erreur:")
+                for line in _update_result.stderr.split('\n'):
+                    if line.strip():
+                        print(f"      {line}")
+            
+            if _update_result.returncode == 0:
+                if "Already up to date" in _update_result.stdout or "Already up-to-date" in _update_result.stdout:
+                    print("\n✅ Version à jour - Aucune mise à jour nécessaire")
+                else:
+                    print("\n✅ Mises à jour appliquées avec succès!")
+                    print("⚠️  IMPORTANT: Redémarrez le script pour utiliser la nouvelle version")
+                    print("="*70)
+                    input("\nAppuyez sur Entrée pour continuer avec l'ancienne version...")
+            else:
+                print("\n⚠️  Échec de la mise à jour - Continuant avec la version actuelle")
+                print("   Vérifiez votre connexion Internet et les permissions Git")
+                
+    except FileNotFoundError:
+        print("❌ Git n'est pas installé sur ce PC!")
+        print("   Installez Git: https://git-scm.com/download/win")
+    except subprocess.TimeoutExpired:
+        print("⚠️  Timeout lors de la mise à jour (connexion lente?)")
+    except Exception as e:
+        print(f"⚠️  Erreur lors de la mise à jour: {e}")
+    
+    print("="*70)
     
     main()
