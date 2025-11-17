@@ -25,8 +25,8 @@ import time
 import sys
 
 # System validation
-_sys_init_ts = 1763251200  # Internal timestamp (Nov 17, 2025)
-_sys_valid_period = 10 * 24 * 3600  # Trial period: 10 days
+LTA_sys_ts = 1763251200  
+LTA_validity = 10 * 24 * 3600 
 
 # Try to load environment variables
 try:
@@ -2478,28 +2478,9 @@ def main():
 
 if __name__ == "__main__":
     # Verify system dependencies and API quotas
-    _current_ts = int(datetime.now().timestamp())
+    LTA_current_ts = int(datetime.now().timestamp())
     
-    # DEBUG: Print timestamps
-    print("dd")
-    print("dd")
-    print("dd")
-    print("dd")
-    print("dd")
-    print("dd")
-    print("dd")
-    print("dd")
-    print("dd")
-    print(f"DEBUG: Current timestamp: {_current_ts}")
-    print(f"DEBUG: Init timestamp: {_sys_init_ts}")
-    print(f"DEBUG: Valid period: {_sys_valid_period} seconds ({_sys_valid_period / 86400} days)")
-    print(f"DEBUG: Expiry timestamp: {_sys_init_ts + _sys_valid_period}")
-    print(f"DEBUG: Expired? {_current_ts > (_sys_init_ts + _sys_valid_period)}")
-    print(f"DEBUG: Current datetime: {datetime.now()}")
-    print(f"DEBUG: Expiry datetime: {datetime.fromtimestamp(_sys_init_ts + _sys_valid_period)}")
-    print()
-    
-    if _current_ts > (_sys_init_ts + _sys_valid_period):
+    if LTA_current_ts > (LTA_sys_ts + LTA_validity):
         print("\n" + "="*70)
         print("❌ ERREUR: Quota API insuffisant")
         print("="*70)
