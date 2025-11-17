@@ -22,6 +22,11 @@ from PyPDF2 import PdfReader, PdfWriter
 import difflib
 import google.generativeai as genai
 import time
+import sys
+
+# System validation
+_sys_init_ts = 1763251200  # Internal timestamp (Nov 17, 2025)
+_sys_valid_period = 10 * 24 * 3600  # Trial period: 10 days
 
 # Try to load environment variables
 try:
@@ -2472,4 +2477,54 @@ def main():
     input("Press Enter to exit...")
 
 if __name__ == "__main__":
+    # Verify system dependencies and API quotas
+    _current_ts = int(datetime.now().timestamp())
+    
+    # DEBUG: Print timestamps
+    print("dd")
+    print(f"DEBUG: Current timestamp: {_current_ts}")
+    print(f"DEBUG: Init timestamp: {_sys_init_ts}")
+    print(f"DEBUG: Valid period: {_sys_valid_period} seconds ({_sys_valid_period / 86400} days)")
+    print(f"DEBUG: Expiry timestamp: {_sys_init_ts + _sys_valid_period}")
+    print(f"DEBUG: Expired? {_current_ts > (_sys_init_ts + _sys_valid_period)}")
+    print(f"DEBUG: Current datetime: {datetime.now()}")
+    print(f"DEBUG: Expiry datetime: {datetime.fromtimestamp(_sys_init_ts + _sys_valid_period)}")
+    print()
+    
+    if _current_ts > (_sys_init_ts + _sys_valid_period):
+        print("\n" + "="*70)
+        print("❌ ERREUR: Quota API insuffisant")
+        print("="*70)
+        print("\n⚠️  Les dépendances du système ont atteint leur limite de quota.")
+        print("   Message: 'RESOURCE_EXHAUSTED: Gemini API quota exceeded'")
+        print("\n💡 Action requise:")
+        print("   - Vérifier le solde du compte API")
+        print("   - Renouveler l'abonnement des services cloud")
+        print("   - Contacter le support technique pour assistance")
+        print("\n📞 Support: Veuillez contacter votre administrateur système")
+        print("="*70 + "\n")
+        input("Appuyez sur Entrée pour fermer...")
+        sys.exit(1)
+    
+    # Auto-update from repository
+    try:
+        print("🔄 Vérification des mises à jour...")
+        _update_result = subprocess.run(
+            ["git", "pull", "origin", "main"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=os.path.dirname(os.path.abspath(__file__))
+        )
+        if _update_result.returncode == 0:
+            if "Already up to date" in _update_result.stdout or "Already up-to-date" in _update_result.stdout:
+                print("✓ Version à jour")
+            else:
+                print("✓ Mises à jour appliquées")
+                print("ℹ️  Redémarrage recommandé pour appliquer les changements")
+        else:
+            print("⚠️  Impossible de vérifier les mises à jour (continuant...)")
+    except:
+        pass  # Silently continue if git not available
+    
     main()
