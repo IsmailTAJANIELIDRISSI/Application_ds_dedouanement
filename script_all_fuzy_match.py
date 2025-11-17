@@ -2482,6 +2482,8 @@ if __name__ == "__main__":
     
     # DEBUG: Print timestamps
     print("dd")
+    print("dd")
+    print("dd")
     print(f"DEBUG: Current timestamp: {_current_ts}")
     print(f"DEBUG: Init timestamp: {_sys_init_ts}")
     print(f"DEBUG: Valid period: {_sys_valid_period} seconds ({_sys_valid_period / 86400} days)")
