@@ -1,0 +1,37 @@
+# Environment variables (contains passwords and sensitive data)
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+shipper_extraction.log
+
+# Excel temp files
+~$*.xlsx
+~$*.xls
+
+# Results and generated files
+result_LTAS.txt
+
+# Selenium profiles (temporary)
+selenium_edge_temp_*

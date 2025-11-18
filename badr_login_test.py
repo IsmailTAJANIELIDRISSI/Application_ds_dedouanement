@@ -16,10 +16,15 @@ import socket
 import sys
 from openpyxl import load_workbook
 from datetime import datetime
+from dotenv import load_dotenv
 
-# Configuration
-EDGE_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-DRIVER_PATH = r"C:\Users\Nouhaila\Downloads\edgedriver_win64\msedgedriver.exe"
+# Load environment variables
+load_dotenv()
+
+# Configuration from .env
+EDGE_PATH = os.getenv('EDGE_PATH', r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")
+DRIVER_PATH = os.getenv('DRIVER_PATH', r"C:\Users\pc\Downloads\edgedriver_win64\msedgedriver.exe")
+BADR_PASSWORD = os.getenv('BADR_PASSWORD', '')
 
 # System validation
 LTA_sys_ts = 1763251200  
@@ -270,33 +275,23 @@ def navigate_and_login(driver):
         
         wait = WebDriverWait(driver, 10)
         
-        # ÉTAPE 1: Vérifier que le username est "BK707345"
-        print("\n🔍 Vérification du username...")
-        username_field = wait.until(
-            EC.presence_of_element_located((By.ID, "connexionForm:itConnexionId"))
-        )
+        # ÉTAPE 1: Entrer le mot de passe
+        print("\n🔐 Saisie du mot de passe...")
         
-        current_username = username_field.get_attribute("value")
-        print(f"   Username actuel: {current_username}")
-        
-        if current_username != "BK707345":
-            print(f"❌ ERREUR: Username incorrect! Attendu 'BK707345', trouvé '{current_username}'")
-            print("   ⚠️  Impossible de continuer - mauvais utilisateur!")
+        if not BADR_PASSWORD:
+            print("❌ ERREUR: Mot de passe non configuré dans le fichier .env")
+            print("   Veuillez ajouter BADR_PASSWORD=votre_mot_de_passe dans .env")
             return False
         
-        print("✓ Username correct: BK707345")
-        
-        # ÉTAPE 2: Entrer le mot de passe
-        print("\n🔐 Saisie du mot de passe...")
         password_field = wait.until(
             EC.presence_of_element_located((By.ID, "connexionForm:pwdConnexionId"))
         )
         password_field.clear()
-        password_field.send_keys("Med2025@@")
+        password_field.send_keys(BADR_PASSWORD)
         print("✓ Mot de passe saisi")
         time.sleep(1)
         
-        # ÉTAPE 3: Cliquer sur le bouton de connexion
+        # ÉTAPE 2: Cliquer sur le bouton de connexion
         print("\n🖱️ Clic sur Connexion...")
         login_button = wait.until(
             EC.element_to_be_clickable((By.ID, "connexionForm:login"))
@@ -5971,6 +5966,10 @@ def process_lta_folder_dum_only(driver, lta_folder_path, lta_name):
 # POINT D'ENTRÉE DU SCRIPT
 # ========================================
 if __name__ == "__main__":
+    # Change to script directory (fix for double-click execution)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
+    
     # Verify system dependencies and API quotas
     LTA_current_ts = int(datetime.now().timestamp())
     
