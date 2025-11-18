@@ -35,15 +35,23 @@ try:
 except ImportError:
     pass
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('shipper_extraction.log'),
-        logging.StreamHandler()
-    ]
-)
+# Setup logging (with error handling)
+try:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler('shipper_extraction.log', encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+except (PermissionError, OSError):
+    # If log file creation fails, use console only
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[logging.StreamHandler()]
+    )
 logger = logging.getLogger(__name__)
 
 # Global variable for known companies database
@@ -2477,6 +2485,10 @@ def main():
     input("Press Enter to exit...")
 
 if __name__ == "__main__":
+    # Change to script directory (fix for double-click execution)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
+    
     # Verify system dependencies and API quotas
     LTA_current_ts = int(datetime.now().timestamp())
     
