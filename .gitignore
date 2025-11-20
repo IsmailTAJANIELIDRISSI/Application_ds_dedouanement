@@ -35,3 +35,21 @@ result_LTAS.txt
 
 # Selenium profiles (temporary)
 selenium_edge_temp_*
+
+# LTA folders and data files (user work data - never commit)
+# All LTA folders (2eme LTA, 3eme LTA, 4eme LTA, etc.)
+*eme LTA/
+*er LTA/
+1er LTA/
+# All LTA text files
+*eme LTA.txt
+*er LTA.txt
+*eme_LTA.txt
+*er_LTA.txt
+1er_LTA.txt
+# All shipper name files
+*_shipper_name.txt
+*_LTA_shipper_name.txt
+# Generated Excel files in LTA folders
+generated_excel*.xlsx
+summary_file*.xlsx
