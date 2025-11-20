@@ -6009,30 +6009,17 @@ if __name__ == "__main__":
         )
         
         if _git_status_check.returncode == 0:
-            # Stash local changes before pulling to avoid merge conflicts
+            # Use git pull with --autostash to handle local changes automatically
+            # This will:
+            # 1. Stash any local changes
+            # 2. Pull updates from GitHub
+            # 3. Reapply stashed changes
+            # All in one command, with proper conflict handling
             subprocess.run(
-                ["git", "stash"],
-                capture_output=True,
-                text=True,
-                timeout=10,
-                cwd=_script_dir
-            )
-            
-            # Try to pull updates silently
-            subprocess.run(
-                ["git", "pull", "origin", "main"],
+                ["git", "pull", "--autostash", "origin", "main"],
                 capture_output=True,
                 text=True,
                 timeout=30,
-                cwd=_script_dir
-            )
-            
-            # Reapply stashed changes (if any)
-            subprocess.run(
-                ["git", "stash", "pop"],
-                capture_output=True,
-                text=True,
-                timeout=10,
                 cwd=_script_dir
             )
                 

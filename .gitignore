@@ -1,55 +1,31 @@
-# Environment variables (contains passwords and sensitive data)
-.env
+# ============================================================
+# STRATEGY: Ignore everything, then whitelist only code files
+# ============================================================
 
-# Python cache
+# Ignore everything by default
+*
+
+# ============================================================
+# WHITELIST: Code files to track
+# ============================================================
+!badr_login_test.py
+!script_all_fuzy_match.py
+!requirements.txt
+!.gitignore
+!.env.example
+!ENV_CONFIGURATION_GUIDE.md
+!*.md
+
+# ============================================================
+# ALWAYS IGNORE: Sensitive and generated files
+# ============================================================
+.env
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-
-# Virtual environments
-venv/
-env/
-ENV/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
 *.log
-shipper_extraction.log
-
-# Excel temp files
 ~$*.xlsx
 ~$*.xls
-
-# Results and generated files
 result_LTAS.txt
-
-# Selenium profiles (temporary)
 selenium_edge_temp_*
-
-# LTA folders and data files (user work data - never commit)
-# All LTA folders (2eme LTA, 3eme LTA, 4eme LTA, etc.)
-*eme LTA/
-*er LTA/
-1er LTA/
-# All LTA text files
-*eme LTA.txt
-*er LTA.txt
-*eme_LTA.txt
-*er_LTA.txt
-1er_LTA.txt
-# All shipper name files
-*_shipper_name.txt
-*_LTA_shipper_name.txt
-# Generated Excel files in LTA folders
-generated_excel*.xlsx
-summary_file*.xlsx
