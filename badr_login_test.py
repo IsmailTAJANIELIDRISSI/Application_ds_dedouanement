@@ -783,7 +783,7 @@ def modify_etat_depotage_for_blocage(driver, lta_folder_path, shipper_data):
             lta_reference_existing = reference_input.get_attribute("value").strip()
             print(f"      ✓ Référence LTA existante: {lta_reference_existing}")
             
-            # MED.2.1: Sauvegarder dans le fichier shipper (ligne 5)
+            # MED.2.1: Sauvegarder dans le fichier shipper (ligne 6)
             try:
                 lta_name = os.path.basename(lta_folder_path)
                 parent_dir = os.path.dirname(lta_folder_path)
@@ -798,21 +798,21 @@ def modify_etat_depotage_for_blocage(driver, lta_folder_path, shipper_data):
                     with open(shipper_file, 'r', encoding='utf-8') as f:
                         lines = f.readlines()
                     
-                    # S'assurer qu'on a au moins 4 lignes
-                    while len(lines) < 4:
+                    # S'assurer qu'on a au moins 5 lignes
+                    while len(lines) < 5:
                         lines.append('\n')
                     
-                    # Ajouter/remplacer ligne 5
-                    if len(lines) == 4:
+                    # Ajouter/remplacer ligne 6
+                    if len(lines) == 5:
                         lines.append(lta_reference_existing + '\n')
                     else:
-                        lines[4] = lta_reference_existing + '\n'
+                        lines[5] = lta_reference_existing + '\n'
                     
                     # Réécrire
                     with open(shipper_file, 'w', encoding='utf-8') as f:
                         f.writelines(lines)
                     
-                    print(f"      ✓ Référence sauvegardée dans {os.path.basename(shipper_file)} (ligne 5)")
+                    print(f"      ✓ Référence sauvegardée dans {os.path.basename(shipper_file)} (ligne 6)")
                 else:
                     print(f"      ⚠️  Fichier shipper introuvable: {shipper_pattern}")
             
