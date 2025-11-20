@@ -6288,3 +6288,5 @@ if __name__ == "__main__":
         print("\n❌ Échec du lancement de Edge")
     
     print("="*70)
+
+    # mailtrap
