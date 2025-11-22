@@ -1062,15 +1062,12 @@ def modify_etat_depotage_for_blocage(driver, lta_folder_path, shipper_data):
             
             # MED.6.2: Remplir l'en-tête du lot
             
-            # Référence: {lta_reference}/N
+            # Référence: {lta_reference}/N (toujours ajouter /N, ne jamais remplacer)
             try:
-                if "/" in lta_reference_existing:
-                    # Format: "235-94908936/1" → "235-94908936/2" pour DUM 2
-                    base_ref = lta_reference_existing.rsplit('/', 1)[0]
-                    lot_reference = f"{base_ref}/{dum_index}"
-                else:
-                    # Format: "23594908936" → "23594908936/2" pour DUM 2
-                    lot_reference = f"{lta_reference_existing}/{dum_index}"
+                # Toujours ajouter /N à la fin
+                # "235-94908936/1" → "235-94908936/1/2" pour DUM 2
+                # "23594908936" → "23594908936/2" pour DUM 2
+                lot_reference = f"{lta_reference_existing}/{dum_index}"
                 
                 ref_lot_input = wait.until(
                     EC.presence_of_element_located((By.XPATH, "//input[contains(@name, 'referenceLot_IT_id')]"))
@@ -2712,21 +2709,13 @@ def create_etat_depotage(driver, lta_folder_path, shipper_data):
             # ED.10.2a: Référence du lot (LTA ref + /N)
             try:
                 # Construire la référence: ajouter /dum_index à la référence LTA validée
-                # 3 cas possibles selon le format validé:
-                # 1. Si format "235-94908726/1" → "235-94908726/2" pour DUM 2 (remplacer le /1 par /N)
-                # 2. Si format "23594908726" → "23594908726/2" pour DUM 2 (ajouter /N)
-                # 3. Si format "235-94908726" → "235-94908726/2" pour DUM 2 (ajouter /N)
+                # Tous les cas: simplement ajouter /N à la fin
+                # 1. Si format "235-94908726/1" → "235-94908726/1/2" pour DUM 2
+                # 2. Si format "23594908726" → "23594908726/2" pour DUM 2
+                # 3. Si format "235-94908726" → "235-94908726/2" pour DUM 2
                 
-                if "/" in lta_reference_clean:
-                    # Cas 1: Format avec /1 → remplacer par /N
-                    # "607-50830150/1" → "607-50830150/2" pour DUM 2
-                    base_ref = lta_reference_clean.split('/')[0]
-                    lot_reference = f"{base_ref}/{dum_index}"
-                else:
-                    # Cas 2 et 3: Format sans / → ajouter /N
-                    # "60750830150" → "60750830150/2" pour DUM 2
-                    # "607-50830150" → "607-50830150/2" pour DUM 2
-                    lot_reference = f"{lta_reference_clean}/{dum_index}"
+                # Toujours ajouter /N à la fin (ne jamais remplacer)
+                lot_reference = f"{lta_reference_clean}/{dum_index}"
                 
                 ref_lot_input = wait.until(
                     EC.presence_of_element_located((By.XPATH, "//input[contains(@name, 'referenceLot_IT_id')]"))
