@@ -1859,10 +1859,9 @@ def mark_dum_as_error_in_excel(lta_folder_path, dum_number):
         # Écrire "error" dans la cellule
         ws[cell] = "error"
         
-        # Appliquer un style visuel (rouge)
-        from openpyxl.styles import PatternFill, Font
-        ws[cell].fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
-        ws[cell].font = Font(color="FFFFFF", bold=True)
+        # Appliquer police noire (pas de couleur de fond)
+        from openpyxl.styles import Font
+        ws[cell].font = Font(color="000000", bold=True)
         
         # Sauvegarder
         wb.save(generated_excel_path)
@@ -4863,7 +4862,16 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
                 print("         ✓ Upload terminé (blocker disparu)")
             else:
                 print("         ⚠️  Timeout blocker upload - continuons")
-            time.sleep(2)
+            
+            # Attendre que l'interface soit prête pour le prochain upload
+            time.sleep(3)  # Stabilisation après premier upload
+            
+            # Vérifier à nouveau si un blocker apparaît (traitement en arrière-plan)
+            print("         ⏳ Vérification stabilité UI...")
+            if wait_for_ui_blocker_disappear(driver, timeout=5):
+                print("         ✓ UI stabilisée")
+            
+            time.sleep(2)  # Pause supplémentaire pour sécurité
             
             print("         ✓ Upload LTA traité, préparation pour le document MN...")
         except Exception as e:
@@ -5371,6 +5379,10 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
                         # Écrire la série dynamique avec marqueur d'erreur
                         error_marker = f"{dum_series} (erreur : ***)"
                         ws[cell_position] = error_marker
+                        
+                        # Appliquer police noire (pas de couleur de fond)
+                        from openpyxl.styles import Font
+                        ws[cell_position].font = Font(color="000000", bold=True)
                         
                         wb.save(generated_excel_path)
                         wb.close()
