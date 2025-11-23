@@ -1856,12 +1856,13 @@ def mark_dum_as_error_in_excel(lta_folder_path, dum_number):
         row = 12 + (dum_number - 1) * 7
         cell = f'C{row}'
         
-        # Écrire "error" dans la cellule
+        # Écrire "error" dans la cellule avec fond rouge
         ws[cell] = "error"
         
-        # Appliquer police noire (pas de couleur de fond)
-        from openpyxl.styles import Font
-        ws[cell].font = Font(color="000000", bold=True)
+        # Appliquer fond rouge avec texte blanc
+        from openpyxl.styles import PatternFill, Font
+        ws[cell].fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+        ws[cell].font = Font(color="FFFFFF", bold=True)
         
         # Sauvegarder
         wb.save(generated_excel_path)
@@ -5352,17 +5353,17 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
                         wb = load_workbook(generated_excel_path, data_only=False)
                         ws = wb['Summary']
                         
-                        # Écrire la série dynamique avec marqueur d'erreur
-                        error_marker = f"{dum_series} (erreur : ***)"
+                        # Écrire la série avec marqueur d'erreur
+                        error_marker = f"{dum_series} (error)"
                         ws[cell_position] = error_marker
                         
-                        # Appliquer police noire (pas de couleur de fond)
-                        from openpyxl.styles import Font
-                        ws[cell_position].font = Font(color="000000", bold=True)
-                        
+                                # Appliquer fond rouge avec texte blanc
+                        from openpyxl.styles import PatternFill, Font
+                        ws[cell_position].fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+                        ws[cell_position].font = Font(color="FFFFFF", bold=True)
                         wb.save(generated_excel_path)
                         wb.close()
-                        
+                
                         print(f"      ✓ Marqueur 'error' ajouté en {cell_position}: {error_marker}")
                 except Exception as excel_err:
                     print(f"      ⚠️  Erreur marquage Excel: {excel_err}")
