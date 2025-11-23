@@ -5145,38 +5145,14 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
                     
                     if has_details_button:
                         # ==================================================================
-                        # BOUTON "DÉTAILS" DÉTECTÉ → VÉRIFIER SI ERREURS RÉELLES
+                        # BOUTON "DÉTAILS" DÉTECTÉ → TOUJOURS TRAITER COMME ERREUR
                         # ==================================================================
-                        print(f"      ⚠️  Bouton 'Détails' détecté → Vérification des erreurs...")
-                        
-                        # Extraire le contenu de l'erreur pour vérifier si c'est vide
-                        try:
-                            error_details = driver.find_elements(By.CSS_SELECTOR, "span.ui-messages-error-detail")
-                            has_actual_errors = False
-                            
-                            for detail in error_details:
-                                error_text = detail.text.strip()
-                                if error_text:  # Si le texte n'est pas vide
-                                    has_actual_errors = True
-                                    break
-                            
-                            if has_actual_errors:
-                                # Vraies erreurs présentes
-                                validation_error = True
-                                print(f"      ❌ Erreurs multiples confirmées (conteneur non-vide)")
-                                error_messages.append("Plusieurs erreurs de validation détectées (voir interface BADR)")
-                            else:
-                                # Conteneur d'erreur vide (phantom error)
-                                print(f"      ℹ️  Conteneur d'erreur détecté mais VIDE (phantom)")
-                                print(f"      ✅ Aucune erreur réelle - validation réussie")
-                                validation_error = False
-                                error_messages = []
-                                
-                        except Exception as check_err:
-                            # En cas d'erreur de vérification, traiter comme erreur par sécurité
-                            print(f"      ⚠️  Impossible de vérifier le contenu: {check_err}")
-                            validation_error = True
-                            error_messages.append("Plusieurs erreurs de validation détectées (voir interface BADR)")
+                        # ⚠️ RÈGLE CRITIQUE: Si le bouton "Détails" existe, c'est qu'il y a
+                        # une liste d'erreurs cachée, même si le span error-detail est vide!
+                        print(f"      ⚠️  Bouton 'Détails' détecté → Erreurs multiples présentes")
+                        validation_error = True
+                        error_messages.append("Plusieurs erreurs de validation détectées (cliquer sur 'Détails' dans BADR pour voir la liste)")
+                        print(f"      ❌ Déclaration invalide (erreurs multiples)")
                         
                     else:
                         # ==================================================================
