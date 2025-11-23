@@ -4631,39 +4631,43 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
                 visible_errors = [c for c in error_containers if c.is_displayed()]
                 
                 if visible_errors:
+                    # ⚠️ RÈGLE SPÉCIALE POUR SAUVEGARDER:
+                    # Tout conteneur d'erreur visible = ÉCHEC, même s'il est vide!
+                    # (contrairement aux validations où phantom errors = OK)
                     print("      ⚠️  Conteneur d'erreur détecté après sauvegarde")
+                    save_error = True  # ← ERREUR IMMÉDIATE dès qu'un conteneur existe
                     
-                    # Vérifier si c'est un phantom error ou une vraie erreur
+                    # Collecter les messages d'erreur s'ils existent
                     for error_container in visible_errors:
                         try:
                             # Chercher le bouton "Détails"
                             details_btn = error_container.find_element(By.ID, "rapportMsgForm:showErrors")
                             if details_btn and details_btn.is_displayed():
-                                # Vérifier si le message d'erreur est vide (phantom)
+                                # Récupérer le texte d'erreur
                                 error_details = error_container.find_elements(By.CSS_SELECTOR, "span.ui-messages-error-detail")
-                                has_error_text = False
-                                
                                 for detail in error_details:
                                     error_text = detail.text.strip()
                                     if error_text:
-                                        has_error_text = True
                                         save_error_messages.append(error_text)
-                                        break
+                                        print(f"      ❌ Erreur: {error_text[:80]}...")
                                 
-                                if has_error_text:
-                                    save_error = True
-                                    print(f"      ❌ Erreur de sauvegarde détectée")
-                                else:
-                                    print(f"      ℹ️  Conteneur d'erreur vide (phantom) - sauvegarde OK")
+                                # Si aucun message textuel, c'est une erreur "vide"
+                                if not save_error_messages:
+                                    save_error_messages.append("Erreur de sauvegarde (conteneur d'erreur vide)")
+                                    print(f"      ❌ Erreur de sauvegarde détectée (conteneur vide)")
                         except:
                             # Pas de bouton "Détails" - vérifier message unique
                             error_details = error_container.find_elements(By.CSS_SELECTOR, "span.ui-messages-error-detail")
                             for detail in error_details:
                                 error_text = detail.text.strip()
                                 if error_text:
-                                    save_error = True
                                     save_error_messages.append(error_text)
                                     print(f"      ❌ Erreur: {error_text[:80]}...")
+                            
+                            # Si toujours aucun message
+                            if not save_error_messages:
+                                save_error_messages.append("Erreur de sauvegarde (conteneur sans détails)")
+                                print(f"      ❌ Erreur de sauvegarde (conteneur sans message)")
                 
                 # Chercher message de succès
                 if not save_error:
