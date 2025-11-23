@@ -4965,7 +4965,15 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
             
             # Attendre que la validation soit traitée
             print("      ⏳ Attente de la validation...")
-            time.sleep(5)  # Attendre la réponse du serveur
+            
+            # Attendre que le blocker UI disparaisse (validation en cours)
+            if wait_for_ui_blocker_disappear(driver, timeout=15):
+                print("      ✓ Validation terminée (blocker disparu)")
+            else:
+                print("      ⚠️  Timeout blocker validation - continuons")
+            
+            # Pause supplémentaire pour stabilité
+            time.sleep(3)
             
             # ==================================================================
             # VÉRIFICATION DES MESSAGES DE VALIDATION (SUCCÈS OU ERREUR)
@@ -5019,14 +5027,38 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
                     
                     if has_details_button:
                         # ==================================================================
-                        # PLUSIEURS ERREURS → TRAITER AUTOMATIQUEMENT COMME ERREUR
+                        # BOUTON "DÉTAILS" DÉTECTÉ → VÉRIFIER SI ERREURS RÉELLES
                         # ==================================================================
-                        validation_error = True
-                        print(f"      ⚠️  Bouton 'Détails' détecté → Plusieurs erreurs présentes")
-                        print(f"      ❌ Traitement automatique comme erreur (pas d'extraction)")
+                        print(f"      ⚠️  Bouton 'Détails' détecté → Vérification des erreurs...")
                         
-                        # Ajouter un message générique pour le fichier d'erreur
-                        error_messages.append("Plusieurs erreurs de validation détectées (voir interface BADR)")
+                        # Extraire le contenu de l'erreur pour vérifier si c'est vide
+                        try:
+                            error_details = driver.find_elements(By.CSS_SELECTOR, "span.ui-messages-error-detail")
+                            has_actual_errors = False
+                            
+                            for detail in error_details:
+                                error_text = detail.text.strip()
+                                if error_text:  # Si le texte n'est pas vide
+                                    has_actual_errors = True
+                                    break
+                            
+                            if has_actual_errors:
+                                # Vraies erreurs présentes
+                                validation_error = True
+                                print(f"      ❌ Erreurs multiples confirmées (conteneur non-vide)")
+                                error_messages.append("Plusieurs erreurs de validation détectées (voir interface BADR)")
+                            else:
+                                # Conteneur d'erreur vide (phantom error)
+                                print(f"      ℹ️  Conteneur d'erreur détecté mais VIDE (phantom)")
+                                print(f"      ✅ Aucune erreur réelle - validation réussie")
+                                validation_error = False
+                                error_messages = []
+                                
+                        except Exception as check_err:
+                            # En cas d'erreur de vérification, traiter comme erreur par sécurité
+                            print(f"      ⚠️  Impossible de vérifier le contenu: {check_err}")
+                            validation_error = True
+                            error_messages.append("Plusieurs erreurs de validation détectées (voir interface BADR)")
                         
                     else:
                         # ==================================================================
@@ -5338,7 +5370,17 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
         # ==================================================================
         print("\n   🏠 Retour à l'accueil pour le prochain DUM...")
         try:
-            # Attendre un peu pour que la page soit stable
+            # Attendre que la page soit complètement stable après validation
+            print("      ⏳ Attente stabilisation page...")
+            time.sleep(3)
+            
+            # Attendre que le blocker soit complètement disparu
+            if wait_for_ui_blocker_disappear(driver, timeout=10):
+                print("      ✓ Page stabilisée (blocker disparu)")
+            else:
+                print("      ⚠️  Timeout blocker - continuons")
+            
+            # Pause supplémentaire avant de cliquer sur Accueil
             time.sleep(2)
             
             # Cliquer sur le bouton "Accueil" (id="quitter")
@@ -5353,6 +5395,13 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
                 print(f"      ⚠️  Clic normal intercepté, utilisation de JavaScript...")
                 driver.execute_script("arguments[0].click();", accueil_btn)
                 print("      ✓ Bouton 'Accueil' cliqué (via JavaScript)")
+            
+            # Attendre que le blocker de navigation disparaisse
+            print("      ⏳ Attente navigation vers accueil...")
+            if wait_for_ui_blocker_disappear(driver, timeout=10):
+                print("      ✓ Navigation terminée (blocker disparu)")
+            else:
+                print("      ⚠️  Timeout blocker navigation")
             
             # Attendre le retour à la page d'accueil
             time.sleep(3)
