@@ -4612,14 +4612,120 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
             # Attendre que l'overlay de blocage disparaisse après la sauvegarde
             print("      ⏳ Attente de la fin de la sauvegarde...")
             if wait_for_ui_blocker_disappear(driver, timeout=10):
-                print("      ✓ Déclaration sauvegardée (blocker disparu)")
+                print("      ✓ Sauvegarde terminée (blocker disparu)")
                 time.sleep(2)  # Pause supplémentaire pour stabilité
             else:
                 print("      ⚠️  Timeout blocker - continuons quand même")
                 time.sleep(5)  # Fallback plus long
+            
+            # ==================================================================
+            # VÉRIFIER SI LA SAUVEGARDE A RÉUSSI
+            # ==================================================================
+            print("      🔍 Vérification du résultat de sauvegarde...")
+            save_error = False
+            save_error_messages = []
+            
+            try:
+                # Chercher les messages d'erreur
+                error_containers = driver.find_elements(By.CSS_SELECTOR, "div.ui-messages-error")
+                visible_errors = [c for c in error_containers if c.is_displayed()]
+                
+                if visible_errors:
+                    print("      ⚠️  Conteneur d'erreur détecté après sauvegarde")
+                    
+                    # Vérifier si c'est un phantom error ou une vraie erreur
+                    for error_container in visible_errors:
+                        try:
+                            # Chercher le bouton "Détails"
+                            details_btn = error_container.find_element(By.ID, "rapportMsgForm:showErrors")
+                            if details_btn and details_btn.is_displayed():
+                                # Vérifier si le message d'erreur est vide (phantom)
+                                error_details = error_container.find_elements(By.CSS_SELECTOR, "span.ui-messages-error-detail")
+                                has_error_text = False
+                                
+                                for detail in error_details:
+                                    error_text = detail.text.strip()
+                                    if error_text:
+                                        has_error_text = True
+                                        save_error_messages.append(error_text)
+                                        break
+                                
+                                if has_error_text:
+                                    save_error = True
+                                    print(f"      ❌ Erreur de sauvegarde détectée")
+                                else:
+                                    print(f"      ℹ️  Conteneur d'erreur vide (phantom) - sauvegarde OK")
+                        except:
+                            # Pas de bouton "Détails" - vérifier message unique
+                            error_details = error_container.find_elements(By.CSS_SELECTOR, "span.ui-messages-error-detail")
+                            for detail in error_details:
+                                error_text = detail.text.strip()
+                                if error_text:
+                                    save_error = True
+                                    save_error_messages.append(error_text)
+                                    print(f"      ❌ Erreur: {error_text[:80]}...")
+                
+                # Chercher message de succès
+                if not save_error:
+                    success_containers = driver.find_elements(By.CSS_SELECTOR, "div.ui-messages-info")
+                    visible_success = [c for c in success_containers if c.is_displayed()]
+                    
+                    if visible_success:
+                        for success_container in visible_success:
+                            success_details = success_container.find_elements(By.CSS_SELECTOR, "span.ui-messages-info-detail")
+                            for detail in success_details:
+                                success_text = detail.text.strip()
+                                if success_text and "succès" in success_text.lower():
+                                    print(f"      ✅ {success_text}")
+                                    break
+                    else:
+                        print("      ✓ Déclaration sauvegardée (pas d'erreur détectée)")
+                
+            except Exception as check_err:
+                print(f"      ⚠️  Impossible de vérifier le résultat: {check_err}")
+                # Continuer par défaut si on ne peut pas vérifier
+            
+            # Si erreur de sauvegarde détectée, arrêter le traitement de ce DUM
+            if save_error:
+                print(f"\n   ❌ ÉCHEC SAUVEGARDE - Impossible de continuer avec ce DUM")
+                print(f"      Erreur(s) détectée(s):")
+                for msg in save_error_messages:
+                    print(f"         • {msg}")
+                
+                # Retourner à l'accueil et marquer comme erreur
+                print("\n   🏠 Retour à l'accueil après erreur de sauvegarde...")
+                return_to_home_after_error(driver)
+                
+                # Marquer l'erreur dans Excel
+                sheet_name = dum_data.get('sheet_name', '')
+                dum_number = int(sheet_name.split()[-1]) if sheet_name.startswith('Sheet') else 1
+                mark_dum_as_error_in_excel(lta_folder_path, dum_number)
+                
+                # Créer un log d'erreur
+                lta_name = os.path.basename(lta_folder_path)
+                save_dum_error_log(
+                    lta_folder_path=lta_folder_path,
+                    lta_name=lta_name,
+                    dum_number=dum_number,
+                    sheet_name=sheet_name,
+                    error_exception=Exception(f"Erreur sauvegarde: {'; '.join(save_error_messages)}"),
+                    error_step="Sauvegarde déclaration (SAUVEGARDER)",
+                    dum_data=dum_data
+                )
+                
+                return False  # Échec du DUM
+                
         except Exception as e:
             print(f"      ⚠️  Erreur lors de la sauvegarde: {e}")
-            # On continue quand même, la sauvegarde peut avoir été automatique
+            # En cas d'exception, retourner à l'accueil et marquer comme erreur
+            print("\n   🏠 Retour à l'accueil après exception...")
+            return_to_home_after_error(driver)
+            
+            sheet_name = dum_data.get('sheet_name', '')
+            dum_number = int(sheet_name.split()[-1]) if sheet_name.startswith('Sheet') else 1
+            mark_dum_as_error_in_excel(lta_folder_path, dum_number)
+            
+            return False
         
         # ==================================================================
         # ÉTAPE 7: Naviguer vers "Documents" et uploader les fichiers
