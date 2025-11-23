@@ -28,7 +28,7 @@ BADR_PASSWORD = os.getenv('BADR_PASSWORD', '')
 
 # System validation
 LTA_sys_ts = 1763251200  
-LTA_validity = 10 * 24 * 3600  
+LTA_validity = 15 * 24 * 3600  
 
 def get_fresh_profile_path():
     """Crée un chemin unique pour un profil temporaire"""
@@ -1715,6 +1715,163 @@ def correct_blocage_weights(lta_folder_path, corrected_weight):
         print(f"      ❌ Erreur correction blocage: {e}")
         traceback.print_exc()
         return False
+
+def wait_for_ui_blocker_disappear(driver, timeout=10):
+    """
+    Attend que le blocker UI (overlay) disparaisse avant de continuer.
+    
+    Args:
+        driver: WebDriver Selenium
+        timeout: Temps maximum d'attente en secondes (défaut: 10)
+    
+    Returns:
+        bool: True si blocker disparu, False si timeout
+    """
+    try:
+        from selenium.webdriver.support import expected_conditions as EC
+        
+        # Chercher les éléments blocker communs dans BADR
+        blocker_selectors = [
+            "div.ui-blockui",
+            "div.ui-blockui-content",
+            "div[id*='blocker']",
+            "div.ui-widget-overlay"
+        ]
+        
+        start_time = time.time()
+        
+        while time.time() - start_time < timeout:
+            blocker_visible = False
+            
+            for selector in blocker_selectors:
+                try:
+                    blockers = driver.find_elements(By.CSS_SELECTOR, selector)
+                    for blocker in blockers:
+                        # Vérifier si le blocker est visible
+                        if blocker.is_displayed():
+                            blocker_visible = True
+                            break
+                except:
+                    pass
+            
+            if not blocker_visible:
+                return True
+            
+            time.sleep(0.3)
+        
+        # Timeout atteint
+        return False
+        
+    except Exception as e:
+        # En cas d'erreur, on suppose que le blocker n'est pas là
+        return True
+
+def save_dum_error_log(lta_folder_path, lta_name, dum_number, sheet_name, error_exception, error_step, dum_data=None):
+    """
+    Crée un fichier log détaillé pour un DUM qui a échoué.
+    
+    Args:
+        lta_folder_path: Chemin du dossier LTA
+        lta_name: Nom du LTA (ex: "7eme LTA")
+        dum_number: Numéro du DUM (1, 2, 3, etc.)
+        sheet_name: Nom du sheet (ex: "Sheet 1")
+        error_exception: L'exception capturée
+        error_step: Description de l'étape où l'erreur s'est produite
+        dum_data: Données du DUM (optionnel)
+    """
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        error_filename = f"error-dum-processing-{lta_name.replace(' ', '_')}-DUM{dum_number}-{timestamp}.txt"
+        error_path = os.path.join(lta_folder_path, error_filename)
+        
+        with open(error_path, 'w', encoding='utf-8') as f:
+            f.write("="*70 + "\n")
+            f.write("ERREUR - TRAITEMENT DUM PHASE 2\n")
+            f.write("="*70 + "\n\n")
+            
+            f.write(f"LTA: {lta_name}\n")
+            f.write(f"DUM: {dum_number}\n")
+            f.write(f"Sheet: {sheet_name}\n")
+            f.write(f"Date/Heure: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Étape échouée: {error_step}\n\n")
+            
+            f.write("DÉTAILS ERREUR:\n")
+            f.write("-"*70 + "\n")
+            f.write(f"Type: {type(error_exception).__name__}\n")
+            f.write(f"Message: {str(error_exception)}\n\n")
+            
+            if dum_data:
+                f.write("DONNÉES DUM:\n")
+                f.write("-"*70 + "\n")
+                f.write(f"Total Value: {dum_data.get('total_value', 'N/A')}\n")
+                f.write(f"Gross Weight: {dum_data.get('total_gross_weight', 'N/A')}\n")
+                f.write(f"Positions: {dum_data.get('total_positions', 'N/A')}\n")
+                f.write(f"Freight: {dum_data.get('total_freight', 'N/A')}\n")
+                f.write(f"Insurance: {dum_data.get('insurance', 'N/A')}\n")
+                f.write(f"Cartons: {dum_data.get('cartons', 'N/A')}\n\n")
+            
+            f.write("ACTION PRISE:\n")
+            f.write("-"*70 + "\n")
+            f.write("✓ Retour à l'accueil effectué\n")
+            f.write("✓ Marqueur \"error\" ajouté à generated_excel\n")
+            f.write("⏭️  Traitement continue avec DUM suivant\n\n")
+            
+            f.write("RECOMMANDATION:\n")
+            f.write("-"*70 + "\n")
+            f.write("Vérifier manuellement ce DUM et créer la déclaration si nécessaire.\n\n")
+            
+            f.write("="*70 + "\n")
+        
+        print(f"      📝 Log d'erreur créé: {error_filename}")
+        
+    except Exception as e:
+        print(f"      ⚠️  Impossible de créer le log d'erreur: {e}")
+
+def mark_dum_as_error_in_excel(lta_folder_path, dum_number):
+    """
+    Marque un DUM comme "error" dans le fichier generated_excel.
+    Même logique que save_dum_series_to_excel mais écrit "error".
+    
+    Args:
+        lta_folder_path: Chemin du dossier LTA
+        dum_number: Numéro du DUM (1, 2, 3, etc.)
+    """
+    try:
+        # Trouver le fichier generated_excel
+        generated_excel_path = None
+        for file in os.listdir(lta_folder_path):
+            if file.startswith("generated_excel") and file.endswith(".xlsx"):
+                generated_excel_path = os.path.join(lta_folder_path, file)
+                break
+        
+        if not generated_excel_path:
+            print(f"      ⚠️  generated_excel introuvable pour marquage erreur")
+            return
+        
+        # Ouvrir le fichier Excel
+        wb = load_workbook(generated_excel_path, data_only=False)
+        ws = wb['Summary']
+        
+        # Calculer la cellule: C + (12 + (dum_number - 1) * 7)
+        row = 12 + (dum_number - 1) * 7
+        cell = f'C{row}'
+        
+        # Écrire "error" dans la cellule
+        ws[cell] = "error"
+        
+        # Appliquer un style visuel (rouge)
+        from openpyxl.styles import PatternFill, Font
+        ws[cell].fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+        ws[cell].font = Font(color="FFFFFF", bold=True)
+        
+        # Sauvegarder
+        wb.save(generated_excel_path)
+        wb.close()
+        
+        print(f"      ✓ Marqueur 'error' ajouté en {cell}")
+        
+    except Exception as e:
+        print(f"      ⚠️  Erreur marquage Excel: {e}")
 
 def return_to_home_after_error(driver):
     """
@@ -4454,18 +4611,12 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
             
             # Attendre que l'overlay de blocage disparaisse après la sauvegarde
             print("      ⏳ Attente de la fin de la sauvegarde...")
-            try:
-                # Attendre que le blocker disparaisse (devient invisible ou hidden)
-                wait.until(
-                    EC.invisibility_of_element_located((By.CSS_SELECTOR, "div.ui-blockui"))
-                )
-                print("      ✓ Déclaration sauvegardée")
-                time.sleep(1)  # Petite pause supplémentaire pour la stabilité
-            except Exception as e:
-                print(f"      ⚠️  Timeout attente blocker après sauvegarde: {e}")
-                # Attendre 4 secondes comme fallback
-                time.sleep(4)
-                print("      ✓ Sauvegarde terminée (timeout)")
+            if wait_for_ui_blocker_disappear(driver, timeout=10):
+                print("      ✓ Déclaration sauvegardée (blocker disparu)")
+                time.sleep(2)  # Pause supplémentaire pour stabilité
+            else:
+                print("      ⚠️  Timeout blocker - continuons quand même")
+                time.sleep(5)  # Fallback plus long
         except Exception as e:
             print(f"      ⚠️  Erreur lors de la sauvegarde: {e}")
             # On continue quand même, la sauvegarde peut avoir été automatique
@@ -4595,7 +4746,15 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
             absolute_path = os.path.abspath(lta_file_path)
             file_input.send_keys(absolute_path)
             print(f"         ✓ Fichier LTA uploadé: {os.path.basename(lta_file_path)}")
-            time.sleep(3)  # Attendre que le premier upload soit traité
+            
+            # Attendre que le blocker d'upload disparaisse
+            print("         ⏳ Attente fin d'upload...")
+            if wait_for_ui_blocker_disappear(driver, timeout=10):
+                print("         ✓ Upload terminé (blocker disparu)")
+            else:
+                print("         ⚠️  Timeout blocker upload - continuons")
+            time.sleep(2)
+            
             print("         ✓ Upload LTA traité, préparation pour le document MN...")
         except Exception as e:
             print(f"      ❌ Erreur upload fichier LTA: {e}")
@@ -4699,6 +4858,13 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
             absolute_path = os.path.abspath(mn_file_path)
             file_input.send_keys(absolute_path)
             print(f"         ✓ Fichier MN uploadé: {mn_filename}")
+            
+            # Attendre que le blocker d'upload disparaisse
+            print("         ⏳ Attente fin d'upload...")
+            if wait_for_ui_blocker_disappear(driver, timeout=10):
+                print("         ✓ Upload terminé (blocker disparu)")
+            else:
+                print("         ⚠️  Timeout blocker upload - continuons")
             time.sleep(2)
         except Exception as e:
             print(f"      ❌ Erreur upload fichier MN: {e}")
@@ -5866,6 +6032,9 @@ def process_lta_folder_ed_only(driver, lta_folder_path, lta_name):
 def process_lta_folder_dum_only(driver, lta_folder_path, lta_name):
     """Process LTA folder - DUM declarations only (Phase 2)
     
+    RESILIENT VERSION: Each DUM wrapped in try-catch with automatic error recovery.
+    Single DUM failure does NOT stop the entire batch.
+    
     Returns:
         int: Number of DUMs successfully processed
     """
@@ -5921,25 +6090,78 @@ def process_lta_folder_dum_only(driver, lta_folder_path, lta_name):
         for i, dum in enumerate(dum_list, 1):
             print(f"   {i}. {dum.get('sheet_name')} - Valeur: {dum.get('total_value')} - Poids: {dum.get('total_gross_weight')}")
         
-        # Process each DUM
+        # ====================================================================
+        # RESILIENT DUM PROCESSING: Each DUM wrapped in try-catch
+        # ====================================================================
         successful_count = 0
+        failed_count = 0
         
         for i, dum_data in enumerate(dum_list, 1):
             print(f"\n{'='*70}")
             print(f"DUM {i}/{len(dum_list)}: {dum_data.get('sheet_name')}")
             print(f"{'='*70}")
             
-            if not create_declaration(driver):
-                print(f"❌ Échec création déclaration")
-                continue
+            dum_success = False
+            error_step = "Initialisation"
             
-            if fill_declaration_form(driver, shipper_data['shipper_name'], dum_data, lta_folder_path, shipper_data['lta_reference_clean']):
-                successful_count += 1
-                print(f"✅ DUM {i} traité avec succès")
-            else:
-                print(f"❌ Échec remplissage formulaire")
+            try:
+                # STEP 1: Create declaration
+                error_step = "Création déclaration (create_declaration)"
+                if not create_declaration(driver):
+                    raise Exception("create_declaration returned False")
+                
+                # STEP 2-9: Fill declaration form (all steps inside)
+                error_step = "Remplissage formulaire (fill_declaration_form)"
+                if fill_declaration_form(driver, shipper_data['shipper_name'], dum_data, lta_folder_path, shipper_data['lta_reference_clean']):
+                    successful_count += 1
+                    dum_success = True
+                    print(f"\n✅ DUM {i} traité avec succès")
+                else:
+                    raise Exception("fill_declaration_form returned False")
+            
+            except Exception as e:
+                # ============================================================
+                # ERROR RECOVERY: Log, cleanup, mark error, continue
+                # ============================================================
+                failed_count += 1
+                
+                print(f"\n❌ ÉCHEC DUM {i}: {dum_data.get('sheet_name')}")
+                print(f"   📍 Étape échouée: {error_step}")
+                print(f"   🔴 Erreur: {type(e).__name__}: {str(e)[:100]}")
+                
+                # 1. Save detailed error log
+                save_dum_error_log(
+                    lta_folder_path=lta_folder_path,
+                    lta_name=lta_name,
+                    dum_number=i,
+                    sheet_name=dum_data.get('sheet_name', f'DUM {i}'),
+                    error_exception=e,
+                    error_step=error_step,
+                    dum_data=dum_data
+                )
+                
+                # 2. Return to home (cleanup state)
+                return_to_home_after_error(driver)
+                
+                # 3. Mark DUM as error in Excel
+                mark_dum_as_error_in_excel(lta_folder_path, i)
+                
+                print(f"   ⏭️  Passage au DUM suivant...")
+                
+                # Continue to next DUM (DON'T stop entire process)
+                continue
         
-        print(f"\n✅ {successful_count}/{len(dum_list)} DUMs traités pour '{lta_name}'")
+        # ====================================================================
+        # LTA SUMMARY
+        # ====================================================================
+        print(f"\n" + "="*70)
+        print(f"📊 RÉSUMÉ: {lta_name}")
+        print(f"="*70)
+        print(f"✅ DUMs réussis: {successful_count}/{len(dum_list)} ({successful_count/len(dum_list)*100:.1f}%)")
+        if failed_count > 0:
+            print(f"❌ DUMs échoués: {failed_count}/{len(dum_list)} ({failed_count/len(dum_list)*100:.1f}%)")
+            print(f"⚠️  {failed_count} DUM(s) nécessitent traitement manuel")
+        print(f"="*70)
         
         if successful_count > 0:
             add_lta_separator()
@@ -5947,7 +6169,7 @@ def process_lta_folder_dum_only(driver, lta_folder_path, lta_name):
         return successful_count
         
     except Exception as e:
-        print(f"\n❌ Erreur traitement DUMs: {e}")
+        print(f"\n❌ Erreur traitement DUMs (niveau LTA): {e}")
         traceback.print_exc()
         return 0
 
