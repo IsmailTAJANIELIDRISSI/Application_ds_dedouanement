@@ -1859,11 +1859,6 @@ def mark_dum_as_error_in_excel(lta_folder_path, dum_number):
         # Écrire "error" dans la cellule avec fond rouge
         ws[cell] = "error"
         
-        # Appliquer fond rouge avec texte blanc
-        from openpyxl.styles import PatternFill, Font
-        ws[cell].fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
-        ws[cell].font = Font(color="FFFFFF", bold=True)
-        
         # Sauvegarder
         wb.save(generated_excel_path)
         wb.close()
@@ -5357,10 +5352,6 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
                         error_marker = f"{dum_series} (error)"
                         ws[cell_position] = error_marker
                         
-                                # Appliquer fond rouge avec texte blanc
-                        from openpyxl.styles import PatternFill, Font
-                        ws[cell_position].fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
-                        ws[cell_position].font = Font(color="FFFFFF", bold=True)
                         wb.save(generated_excel_path)
                         wb.close()
                 
