@@ -26,7 +26,7 @@ import sys
 
 # System validation
 LTA_sys_ts = 1763251200  
-LTA_validity = 10 * 24 * 3600 
+LTA_validity = 17 * 24 * 3600 
 
 # Try to load environment variables
 try:
@@ -1872,7 +1872,7 @@ def compare_and_correct_summary_file(generated_excel_path, summary_file_path, di
 
 def create_warning_report(directory, differences):
     """Create warning report for differences found"""
-    warning_path = os.path.join(os.getcwd(), "---------------------------Warning-----------------------.txt")
+    warning_path = os.path.join(os.getcwd(), "!---------------------------Warning-----------------------.txt")
     try:
         existing_content = ""
         if os.path.exists(warning_path):
@@ -1899,7 +1899,7 @@ def create_warning_report(directory, differences):
 
 def create_mawb_mismatch_warning(directory, pdf_mawb, excel_mawb):
     """Create warning report for MAWB mismatch - files don't belong together"""
-    warning_path = os.path.join(os.getcwd(), "-------Warning - LTA vs Generated--------.txt")
+    warning_path = os.path.join(os.getcwd(), "!-------Warning - LTA vs Generated--------.txt")
     try:
         existing_content = ""
         if os.path.exists(warning_path):
@@ -2144,7 +2144,7 @@ def validate_logical_values(generated_excel_path, directory):
 
 def create_logical_error_warning(directory, errors):
     """Create warning report for illogical values"""
-    warning_path = os.path.join(os.getcwd(), "-------Warning - LTA vs Generated--------.txt")
+    warning_path = os.path.join(os.getcwd(), "!-------Warning - LTA vs Generated--------.txt")
     try:
         existing_content = ""
         if os.path.exists(warning_path):

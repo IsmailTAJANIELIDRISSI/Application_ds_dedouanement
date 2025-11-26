@@ -28,7 +28,7 @@ BADR_PASSWORD = os.getenv('BADR_PASSWORD', '')
 
 # System validation
 LTA_sys_ts = 1763251200  
-LTA_validity = 15 * 24 * 3600  
+LTA_validity = 17 * 24 * 3600  
 
 def get_fresh_profile_path():
     """Crée un chemin unique pour un profil temporaire"""
