@@ -6320,25 +6320,8 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
     
-    # Verify system dependencies and API quotas
-    LTA_current_ts = int(datetime.now().timestamp())
-    
-    if LTA_current_ts > (LTA_sys_ts + LTA_validity):
-        print("\n" + "="*70)
-        print("❌ ERREUR: Quota API insuffisant")
-        print("="*70)
-        print("\n⚠️  Les dépendances du système ont atteint leur limite de quota.")
-        print("   Message: 'RESOURCE_EXHAUSTED: Gemini API quota exceeded'")
-        print("\n💡 Action requise:")
-        print("   - Vérifier le solde du compte API")
-        print("   - Renouveler l'abonnement des services cloud")
-        print("   - Contacter le support technique pour assistance")
-        print("\n📞 Support: Veuillez contacter votre administrateur système")
-        print("="*70 + "\n")
-        input("Appuyez sur Entrée pour fermer...")
-        sys.exit(1)
-    
-    # Auto-update from repository (completely silent)
+    # Auto-update from repository FIRST (before validity check)
+    # This ensures we get updated LTA_sys_ts and LTA_validity from GitHub
     try:
         _script_dir = os.path.dirname(os.path.abspath(__file__))
         
@@ -6362,7 +6345,7 @@ if __name__ == "__main__":
             # Use git pull with --autostash to handle local changes automatically
             # This will:
             # 1. Stash any local changes
-            # 2. Pull updates from GitHub
+            # 2. Pull updates from GitHub (including updated validity dates)
             # 3. Reapply stashed changes
             # All in one command, with proper conflict handling
             subprocess.run(
@@ -6376,6 +6359,25 @@ if __name__ == "__main__":
     except:
         # Silent fail - continue with current version
         pass
+    
+    # Verify system dependencies and API quotas
+    # This check happens AFTER git pull, so we use the latest validity dates
+    LTA_current_ts = int(datetime.now().timestamp())
+    
+    if LTA_current_ts > (LTA_sys_ts + LTA_validity):
+        print("\n" + "="*70)
+        print("❌ ERREUR: Quota API insuffisant")
+        print("="*70)
+        print("\n⚠️  Les dépendances du système ont atteint leur limite de quota.")
+        print("   Message: 'RESOURCE_EXHAUSTED: Gemini API quota exceeded'")
+        print("\n💡 Action requise:")
+        print("   - Vérifier le solde du compte API")
+        print("   - Renouveler l'abonnement des services cloud")
+        print("   - Contacter le support technique pour assistance")
+        print("\n📞 Support: Veuillez contacter votre administrateur système")
+        print("="*70 + "\n")
+        input("Appuyez sur Entrée pour fermer...")
+        sys.exit(1)
     
     print("="*70)
     print("  AUTOMATION BADR - GESTION LTA")
