@@ -4901,22 +4901,93 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
         
         # 7.2.1: Sélectionner le type de document "FACTURE"
         print(f"      1️⃣ Sélection du type 'FACTURE'...")
+        
+        dropdown_opened = False
+        max_attempts = 3
+        
+        for attempt in range(1, max_attempts + 1):
+            try:
+                if attempt > 1:
+                    print(f"         🔄 Tentative {attempt}/{max_attempts}...")
+                    time.sleep(2)
+                
+                # Méthode 1: Utiliser le trigger CSS
+                try:
+                    # Attendre que le dropdown soit complètement réinitialisé
+                    doc_type_container = wait.until(
+                        EC.presence_of_element_located((By.ID, "mainTab:form7:comp1"))
+                    )
+                    
+                    # Vérifier que le dropdown n'est pas déjà ouvert
+                    try:
+                        open_panel = driver.find_element(By.CSS_SELECTOR, "div#mainTab\\:form7\\:comp1_panel[style*='display: block']")
+                        print(f"         ℹ️  Dropdown déjà ouvert, fermeture...")
+                        driver.execute_script("arguments[0].style.display = 'none';", open_panel)
+                        time.sleep(1)
+                    except:
+                        pass
+                    
+                    # Scroll et focus sur le conteneur
+                    driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", doc_type_container)
+                    time.sleep(0.5)
+                    
+                    # Chercher le trigger
+                    doc_type_trigger = doc_type_container.find_element(By.CSS_SELECTOR, "div.ui-selectonemenu-trigger")
+                    
+                    # Essayer click standard
+                    doc_type_trigger.click()
+                    time.sleep(1.5)
+                    
+                    # Vérifier si le dropdown s'est ouvert
+                    dropdown_panel = driver.find_element(By.CSS_SELECTOR, "div#mainTab\\:form7\\:comp1_panel[style*='display: block']")
+                    if dropdown_panel:
+                        print("         ✓ Dropdown type document ouvert (méthode click standard)")
+                        dropdown_opened = True
+                        break
+                    
+                except Exception as click_err:
+                    # Méthode 2: JavaScript click
+                    print(f"         ℹ️  Click standard échoué, tentative JavaScript...")
+                    try:
+                        doc_type_container = driver.find_element(By.ID, "mainTab:form7:comp1")
+                        doc_type_trigger = doc_type_container.find_element(By.CSS_SELECTOR, "div.ui-selectonemenu-trigger")
+                        driver.execute_script("arguments[0].click();", doc_type_trigger)
+                        time.sleep(1.5)
+                        
+                        # Vérifier ouverture
+                        dropdown_panel = driver.find_element(By.CSS_SELECTOR, "div#mainTab\\:form7\\:comp1_panel[style*='display: block']")
+                        if dropdown_panel:
+                            print("         ✓ Dropdown type document ouvert (méthode JavaScript)")
+                            dropdown_opened = True
+                            break
+                    except Exception as js_err:
+                        # Méthode 3: Click sur le label
+                        print(f"         ℹ️  JavaScript échoué, tentative click sur label...")
+                        try:
+                            doc_type_label = driver.find_element(By.ID, "mainTab:form7:comp1_label")
+                            doc_type_label.click()
+                            time.sleep(1.5)
+                            
+                            # Vérifier ouverture
+                            dropdown_panel = driver.find_element(By.CSS_SELECTOR, "div#mainTab\\:form7\\:comp1_panel[style*='display: block']")
+                            if dropdown_panel:
+                                print("         ✓ Dropdown type document ouvert (méthode label)")
+                                dropdown_opened = True
+                                break
+                        except:
+                            pass
+            
+            except Exception as e:
+                if attempt == max_attempts:
+                    print(f"      ❌ Impossible d'ouvrir le dropdown après {max_attempts} tentatives: {e}")
+                    return False
+        
+        if not dropdown_opened:
+            print(f"      ❌ Dropdown non ouvert après {max_attempts} tentatives")
+            return False
+        
+        # Sélectionner l'option "FACTURE"
         try:
-            # Attendre que le trigger soit dans un état stable
-            doc_type_trigger = wait.until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "div#mainTab\\:form7\\:comp1 div.ui-selectonemenu-trigger"))
-            )
-            
-            # Vérifier que le trigger est visible et interactif
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", doc_type_trigger)
-            time.sleep(0.5)
-            
-            # Cliquer sur le trigger pour ouvrir le dropdown
-            doc_type_trigger.click()
-            print("         ✓ Dropdown type document ouvert")
-            time.sleep(1.5)  # Augmenter le délai pour laisser le dropdown s'ouvrir complètement
-            
-            # Sélectionner l'option "FACTURE"
             doc_type_option = wait.until(
                 EC.element_to_be_clickable((By.XPATH, "//li[@data-label='FACTURE']"))
             )
@@ -4924,7 +4995,7 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
             print("         ✓ Type sélectionné: A0006 (FACTURE)")
             time.sleep(1)
         except Exception as e:
-            print(f"      ❌ Erreur sélection type document: {e}")
+            print(f"      ❌ Erreur sélection option FACTURE: {e}")
             return False
         
         # 7.2.2: Entrer la référence "mnN"
