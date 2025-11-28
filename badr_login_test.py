@@ -4885,16 +4885,36 @@ def fill_declaration_form(driver, shipper_name, dum_data, lta_folder_path, lta_r
         mn_reference = f"mn{dum_number}"
         mn_filename = f"mn{dum_number}.pdf"
         
+        # 7.2.0: Attendre que l'UI soit complètement prête après le premier upload
+        print(f"      ⏳ Attente stabilisation complète UI...")
+        time.sleep(3)  # Pause supplémentaire pour permettre à l'UI de se réinitialiser
+        
+        # Fermer tout dropdown qui pourrait être resté ouvert
+        try:
+            open_panels = driver.find_elements(By.CSS_SELECTOR, "div.ui-selectonemenu-panel[style*='display: block']")
+            if open_panels:
+                print("         🔄 Fermeture dropdown résiduel...")
+                driver.execute_script("arguments[0].style.display = 'none';", open_panels[0])
+                time.sleep(0.5)
+        except:
+            pass
+        
         # 7.2.1: Sélectionner le type de document "FACTURE"
         print(f"      1️⃣ Sélection du type 'FACTURE'...")
         try:
-            # Cliquer sur le trigger pour ouvrir le dropdown
+            # Attendre que le trigger soit dans un état stable
             doc_type_trigger = wait.until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "div#mainTab\\:form7\\:comp1 div.ui-selectonemenu-trigger"))
             )
+            
+            # Vérifier que le trigger est visible et interactif
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", doc_type_trigger)
+            time.sleep(0.5)
+            
+            # Cliquer sur le trigger pour ouvrir le dropdown
             doc_type_trigger.click()
             print("         ✓ Dropdown type document ouvert")
-            time.sleep(1)
+            time.sleep(1.5)  # Augmenter le délai pour laisser le dropdown s'ouvrir complètement
             
             # Sélectionner l'option "FACTURE"
             doc_type_option = wait.until(
